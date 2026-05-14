@@ -1,0 +1,17 @@
+node_modules
+dist
+.DS_Store
+*.log
+.vite
+coverage
+
+# Build artifacts that should never be committed
+*.tsbuildinfo
+vite.config.d.ts
+vite.config.js
+
+# Editor / OS junk
+.idea
+.vscode
+.env
+.env.*
