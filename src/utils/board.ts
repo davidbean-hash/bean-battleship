@@ -1,255 +1,146 @@
-import type {
-  Board,
-  BoardCell,
-  CellCoord,
+import {
+  BOARD_SIZE,
+  BoardState,
+  CellState,
+  FLEET,
   Orientation,
   PlacedShip,
-  ShipDefinition,
-  ShotResult,
+  ShipSpec,
 } from '../types';
 
-export const DEFAULT_BOARD_SIZE = 12;
-
-const ROW_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-
-/** Create an empty board of the given size. */
-export function createEmptyBoard(size: number = DEFAULT_BOARD_SIZE): Board {
-  if (!Number.isInteger(size) || size <= 0) {
-    throw new Error(`Invalid board size: ${size}`);
-  }
-  const cells: BoardCell[][] = Array.from({ length: size }, () =>
-    Array.from({ length: size }, () => ({ state: 'empty' as const })),
+export function emptyBoard(): BoardState {
+  const occupancy: number[][] = Array.from({ length: BOARD_SIZE }, () =>
+    Array(BOARD_SIZE).fill(-1),
   );
-  return { size, cells, ships: [] };
+  const shots: CellState[][] = Array.from({ length: BOARD_SIZE }, () =>
+    Array(BOARD_SIZE).fill('unknown') as CellState[],
+  );
+  return { ships: [], occupancy, shots };
 }
 
-/** True if the coord lies inside an `size`x`size` board. */
-export function isWithinBoard(coord: CellCoord, size: number): boolean {
-  return (
-    Number.isInteger(coord.row) &&
-    Number.isInteger(coord.col) &&
-    coord.row >= 0 &&
-    coord.col >= 0 &&
-    coord.row < size &&
-    coord.col < size
-  );
+export function inBounds(r: number, c: number): boolean {
+  return r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE;
 }
 
-/** Compute the coordinates a ship would occupy from the given start. */
-export function getShipCells(
-  start: CellCoord,
+export function shipCells(
+  row: number,
+  col: number,
   length: number,
   orientation: Orientation,
-): CellCoord[] {
-  const cells: CellCoord[] = [];
+): Array<[number, number]> {
+  const cells: Array<[number, number]> = [];
   for (let i = 0; i < length; i++) {
-    cells.push(
-      orientation === 'horizontal'
-        ? { row: start.row, col: start.col + i }
-        : { row: start.row + i, col: start.col },
-    );
+    const r = orientation === 'H' ? row : row + i;
+    const c = orientation === 'H' ? col + i : col;
+    cells.push([r, c]);
   }
   return cells;
 }
 
-/** Return all in-bounds neighbours (up to 8) around the coord. */
-export function getAdjacentCells(coord: CellCoord, size: number): CellCoord[] {
-  const out: CellCoord[] = [];
-  for (let dr = -1; dr <= 1; dr++) {
-    for (let dc = -1; dc <= 1; dc++) {
-      if (dr === 0 && dc === 0) continue;
-      const n = { row: coord.row + dr, col: coord.col + dc };
-      if (isWithinBoard(n, size)) out.push(n);
-    }
-  }
-  return out;
-}
-
-/**
- * Check whether a ship can legally be placed.
- * - All cells must be in-bounds.
- * - Cells must currently be empty.
- * - No adjacent cell (orthogonal or diagonal) may contain another ship.
- */
-export function canPlaceShip(
-  board: Board,
-  ship: Pick<ShipDefinition, 'id' | 'length'>,
-  start: CellCoord,
+export function canPlace(
+  board: BoardState,
+  row: number,
+  col: number,
+  length: number,
   orientation: Orientation,
 ): boolean {
-  const cells = getShipCells(start, ship.length, orientation);
-  // Bounds + occupancy.
-  for (const c of cells) {
-    if (!isWithinBoard(c, board.size)) return false;
-    if (board.cells[c.row][c.col].state !== 'empty') return false;
+  const cells = shipCells(row, col, length, orientation);
+  for (const [r, c] of cells) {
+    if (!inBounds(r, c)) return false;
+    if (board.occupancy[r][c] !== -1) return false;
   }
-  // No-touch rule: every adjacent cell that isn't part of this ship must be empty.
-  const shipKey = (c: CellCoord) => `${c.row},${c.col}`;
-  const own = new Set(cells.map(shipKey));
-  for (const c of cells) {
-    for (const n of getAdjacentCells(c, board.size)) {
-      if (own.has(shipKey(n))) continue;
-      if (board.cells[n.row][n.col].state !== 'empty') return false;
+  // No-touch rule: ships may not be orthogonally or diagonally adjacent.
+  const own = new Set(cells.map(([r, c]) => `${r},${c}`));
+  for (const [r, c] of cells) {
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        if (dr === 0 && dc === 0) continue;
+        const nr = r + dr;
+        const nc = c + dc;
+        if (!inBounds(nr, nc)) continue;
+        if (own.has(`${nr},${nc}`)) continue;
+        if (board.occupancy[nr][nc] !== -1) return false;
+      }
     }
   }
   return true;
 }
 
-function cloneCells(cells: BoardCell[][]): BoardCell[][] {
-  return cells.map((row) => row.map((cell) => ({ ...cell })));
-}
-
-/** Place a ship on the board, returning a new Board. Throws if illegal. */
 export function placeShip(
-  board: Board,
-  ship: ShipDefinition,
-  start: CellCoord,
+  board: BoardState,
+  spec: ShipSpec,
+  row: number,
+  col: number,
   orientation: Orientation,
-): Board {
-  if (!canPlaceShip(board, ship, start, orientation)) {
-    throw new Error(
-      `Cannot place ship ${ship.id} at (${start.row},${start.col}) ${orientation}`,
-    );
+): boolean {
+  if (!canPlace(board, row, col, spec.length, orientation)) return false;
+  const ship: PlacedShip = { ...spec, row, col, orientation, hits: 0 };
+  const idx = board.ships.length;
+  board.ships.push(ship);
+  for (const [r, c] of shipCells(row, col, spec.length, orientation)) {
+    board.occupancy[r][c] = idx;
   }
-  const cells = cloneCells(board.cells);
-  const shipCells = getShipCells(start, ship.length, orientation);
-  for (const c of shipCells) {
-    cells[c.row][c.col] = { state: 'ship', shipId: ship.id };
-  }
-  const placed: PlacedShip = {
-    shipId: ship.id,
-    length: ship.length,
-    start,
-    orientation,
-    cells: shipCells,
-    hits: shipCells.map(() => false),
-  };
-  return { size: board.size, cells, ships: [...board.ships, placed] };
+  return true;
 }
 
-/** Remove a ship by id, returning a new Board. No-op if not found. */
-export function removeShip(board: Board, shipId: string): Board {
-  const target = board.ships.find((s) => s.shipId === shipId);
-  if (!target) return board;
-  const cells = cloneCells(board.cells);
-  for (const c of target.cells) {
-    cells[c.row][c.col] = { state: 'empty' };
-  }
-  return {
-    size: board.size,
-    cells,
-    ships: board.ships.filter((s) => s.shipId !== shipId),
-  };
-}
-
-/**
- * Resolve a shot at `coord`. Returns the new board plus the outcome.
- * Repeat shots (already hit/miss) return outcome 'repeat' and leave the board unchanged.
- */
-export function receiveShot(
-  board: Board,
-  coord: CellCoord,
-): { board: Board; result: ShotResult } {
-  if (!isWithinBoard(coord, board.size)) {
-    throw new Error(`Shot out of bounds: (${coord.row},${coord.col})`);
-  }
-  const existing = board.cells[coord.row][coord.col];
-  if (existing.state === 'hit' || existing.state === 'miss') {
-    return { board, result: { coord, outcome: 'repeat', shipId: existing.shipId } };
-  }
-
-  const cells = cloneCells(board.cells);
-  if (existing.state === 'ship') {
-    const shipId = existing.shipId!;
-    cells[coord.row][coord.col] = { state: 'hit', shipId };
-    const ships = board.ships.map((s) => {
-      if (s.shipId !== shipId) return s;
-      const hits = s.hits.slice();
-      const idx = s.cells.findIndex(
-        (c) => c.row === coord.row && c.col === coord.col,
-      );
-      if (idx >= 0) hits[idx] = true;
-      return { ...s, hits };
-    });
-    const nextBoard: Board = { size: board.size, cells, ships };
-    const sunk = isShipSunk(nextBoard, shipId);
-    return {
-      board: nextBoard,
-      result: { coord, outcome: sunk ? 'sunk' : 'hit', shipId },
-    };
-  }
-
-  // empty -> miss
-  cells[coord.row][coord.col] = { state: 'miss' };
-  return {
-    board: { size: board.size, cells, ships: board.ships },
-    result: { coord, outcome: 'miss' },
-  };
-}
-
-/** True if every cell of the named ship has been hit. */
-export function isShipSunk(board: Board, shipId: string): boolean {
-  const ship = board.ships.find((s) => s.shipId === shipId);
-  if (!ship) return false;
-  return ship.hits.every(Boolean);
-}
-
-/** True if every placed ship has been sunk (and at least one is placed). */
-export function areAllShipsSunk(board: Board): boolean {
-  if (board.ships.length === 0) return false;
-  return board.ships.every((s) => s.hits.every(Boolean));
-}
-
-/** Convert a coord to a human label like "A1", "L12". */
-export function getCellLabel(coord: CellCoord): string {
-  const letter = ROW_LETTERS[coord.row] ?? '?';
-  return `${letter}${coord.col + 1}`;
-}
-
-/**
- * Randomly place every ship in `ships` on a fresh board, obeying the no-touch rule.
- * Throws if a legal layout cannot be found within the retry budget.
- */
-export function generateRandomFleet(
-  boardSize: number,
-  ships: ShipDefinition[],
-  rng: () => number = Math.random,
-): Board {
-  const orientations: Orientation[] = ['horizontal', 'vertical'];
-  const ordered = [...ships].sort((a, b) => b.length - a.length);
-
-  const MAX_FLEET_ATTEMPTS = 50;
-  const MAX_SHIP_ATTEMPTS = 500;
-
-  for (let fleetAttempt = 0; fleetAttempt < MAX_FLEET_ATTEMPTS; fleetAttempt++) {
-    let board = createEmptyBoard(boardSize);
-    let success = true;
-
-    for (const ship of ordered) {
+export function randomizeBoard(rng: () => number = Math.random): BoardState {
+  while (true) {
+    const board = emptyBoard();
+    let ok = true;
+    for (const spec of FLEET) {
       let placed = false;
-      for (let attempt = 0; attempt < MAX_SHIP_ATTEMPTS; attempt++) {
-        const orientation = orientations[Math.floor(rng() * 2)];
-        const maxRow = orientation === 'vertical' ? boardSize - ship.length : boardSize - 1;
-        const maxCol = orientation === 'horizontal' ? boardSize - ship.length : boardSize - 1;
-        if (maxRow < 0 || maxCol < 0) break;
-        const start: CellCoord = {
-          row: Math.floor(rng() * (maxRow + 1)),
-          col: Math.floor(rng() * (maxCol + 1)),
-        };
-        if (canPlaceShip(board, ship, start, orientation)) {
-          board = placeShip(board, ship, start, orientation);
+      for (let attempt = 0; attempt < 200 && !placed; attempt++) {
+        const orientation: Orientation = rng() < 0.5 ? 'H' : 'V';
+        const row = Math.floor(rng() * BOARD_SIZE);
+        const col = Math.floor(rng() * BOARD_SIZE);
+        if (canPlace(board, row, col, spec.length, orientation)) {
+          placeShip(board, spec, row, col, orientation);
           placed = true;
-          break;
         }
       }
       if (!placed) {
-        success = false;
+        ok = false;
         break;
       }
     }
-
-    if (success) return board;
+    if (ok) return board;
   }
+}
 
-  throw new Error('generateRandomFleet: could not place fleet after retries');
+export interface ShotResult {
+  result: 'miss' | 'hit' | 'sunk' | 'repeat';
+  shipIndex?: number;
+  sunkShip?: PlacedShip;
+  gameOver: boolean;
+}
+
+export function fireAt(board: BoardState, row: number, col: number): ShotResult {
+  if (!inBounds(row, col)) {
+    return { result: 'repeat', gameOver: false };
+  }
+  const prior = board.shots[row][col];
+  if (prior !== 'unknown') {
+    return { result: 'repeat', gameOver: false };
+  }
+  const shipIdx = board.occupancy[row][col];
+  if (shipIdx === -1) {
+    board.shots[row][col] = 'miss';
+    return { result: 'miss', gameOver: false };
+  }
+  const ship = board.ships[shipIdx];
+  ship.hits += 1;
+  if (ship.hits >= ship.length) {
+    // mark all sunk
+    for (const [r, c] of shipCells(ship.row, ship.col, ship.length, ship.orientation)) {
+      board.shots[r][c] = 'sunk';
+    }
+    const gameOver = board.ships.every((s) => s.hits >= s.length);
+    return { result: 'sunk', shipIndex: shipIdx, sunkShip: ship, gameOver };
+  }
+  board.shots[row][col] = 'hit';
+  return { result: 'hit', shipIndex: shipIdx, gameOver: false };
+}
+
+export function allSunk(board: BoardState): boolean {
+  return board.ships.length > 0 && board.ships.every((s) => s.hits >= s.length);
 }

@@ -1,61 +1,37 @@
-// Core type definitions for Austin Battleship.
+export const BOARD_SIZE = 10;
 
-export type Orientation = 'horizontal' | 'vertical';
+export type Orientation = 'H' | 'V';
+export type Difficulty = 'moderate' | 'hard';
+export type Phase = 'landing' | 'setup' | 'playing' | 'over';
+export type Player = 'you' | 'ai';
 
-export type GamePhase = 'placement' | 'playing' | 'gameover';
-
-export type PlayerType = 'human' | 'ai';
-
-export interface CellCoord {
-  row: number; // 0-indexed, 0 == 'A'
-  col: number; // 0-indexed, 0 == '1'
-}
-
-export type IconType =
-  | 'capitol'
-  | 'bats'
-  | 'rainey'
-  | 'paddleboard'
-  | 'springs'
-  | 'tap'
-  | 'kite';
-
-export interface ShipDefinition {
+export interface ShipSpec {
   id: string;
   name: string;
   length: number;
-  themeColor: string;
-  shortLabel: string;
-  iconType: IconType;
-  flavor?: string;
 }
 
-export interface PlacedShip {
-  shipId: string;
-  length: number;
-  start: CellCoord;
+export interface PlacedShip extends ShipSpec {
+  row: number;
+  col: number;
   orientation: Orientation;
-  cells: CellCoord[];
-  hits: boolean[]; // parallel to cells
+  hits: number;
 }
 
-export type CellState = 'empty' | 'ship' | 'hit' | 'miss';
+export type CellState = 'unknown' | 'miss' | 'hit' | 'sunk';
 
-export interface BoardCell {
-  state: CellState;
-  shipId?: string;
-}
-
-export interface Board {
-  size: number;
-  cells: BoardCell[][];
+export interface BoardState {
   ships: PlacedShip[];
+  // ship index at each cell, or -1
+  occupancy: number[][];
+  // shots fired AT this board
+  shots: CellState[][];
 }
 
-export type ShotOutcome = 'hit' | 'miss' | 'sunk' | 'repeat';
-
-export interface ShotResult {
-  coord: CellCoord;
-  outcome: ShotOutcome;
-  shipId?: string;
-}
+export const FLEET: ShipSpec[] = [
+  { id: 'green-monster', name: 'The Green Monster', length: 5 },
+  { id: 'peskys-pole', name: "Pesky's Pole Patrol", length: 4 },
+  { id: 'citgo', name: 'The Citgo Cruiser', length: 3 },
+  { id: 'yawkey-way', name: 'Yawkey Way Destroyer', length: 3 },
+  { id: 'monster-seat', name: 'The Monster Seat Sub', length: 2 },
+];

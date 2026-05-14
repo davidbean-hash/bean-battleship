@@ -1,187 +1,154 @@
-import type { CellCoord, ShotOutcome } from '../types';
-import { isWithinBoard } from './board';
+import { BOARD_SIZE, CellState, Difficulty, FLEET, PlacedShip } from '../types';
+import { inBounds, shipCells } from './board';
 
-/**
- * The AI plays a fair game: it learns ONLY from feedback the engine gives it
- * (hit / miss / sunk + the cells of any ship it sinks). It never inspects
- * the opponent board's hidden state.
- */
-export interface AIMemory {
-  boardSize: number;
-  /** fired[row][col] === true if the AI has already fired at that cell. */
-  fired: boolean[][];
-  /** Pending neighbour shots queued during target mode. May contain stale cells; consumers must filter. */
-  targetQueue: CellCoord[];
-  /** Hits belonging to ships not yet sunk — anchors for target mode. */
-  activeHits: CellCoord[];
-  /**
-   * Last shot the AI made, in the form `${row},${col}` — convenience for
-   * callers that want to render an animation. Optional internal field.
-   */
-  lastShot?: CellCoord;
+export interface AIState {
+  difficulty: Difficulty;
+  shots: CellState[][];
+  remainingLengths: number[];
+  // hits on the ship currently being targeted (not yet sunk)
+  currentHits: Array<[number, number]>;
+  // candidate cells to fire at next (LIFO)
+  targetQueue: Array<[number, number]>;
 }
 
-/** Result feedback the engine supplies after the AI fires. */
-export interface AIShotFeedback {
-  outcome: ShotOutcome;
-  /** When `outcome === 'sunk'`, the full set of cells comprising the sunk ship. */
-  sunkCells?: CellCoord[];
-}
-
-const coordKey = (c: CellCoord) => `${c.row},${c.col}`;
-
-/** Create a fresh AI memory for a square board of `boardSize`. */
-export function createInitialAIMemory(boardSize: number): AIMemory {
-  if (!Number.isInteger(boardSize) || boardSize <= 0) {
-    throw new Error(`Invalid board size: ${boardSize}`);
-  }
-  const fired: boolean[][] = Array.from({ length: boardSize }, () =>
-    Array.from({ length: boardSize }, () => false),
-  );
+export function createAI(difficulty: Difficulty): AIState {
   return {
-    boardSize,
-    fired,
+    difficulty,
+    shots: Array.from({ length: BOARD_SIZE }, () =>
+      Array(BOARD_SIZE).fill('unknown') as CellState[],
+    ),
+    remainingLengths: FLEET.map((s) => s.length),
+    currentHits: [],
     targetQueue: [],
-    activeHits: [],
   };
 }
 
-/** True if the AI has already fired at this coord. */
-export function hasAIFiredAt(memory: AIMemory, coord: CellCoord): boolean {
-  if (!isWithinBoard(coord, memory.boardSize)) return false;
-  return memory.fired[coord.row][coord.col];
-}
-
-/** Return the up-to-4 orthogonal neighbours of `coord` that lie inside the board. */
-export function getNeighborTargets(coord: CellCoord, boardSize: number): CellCoord[] {
-  const deltas: Array<[number, number]> = [
-    [-1, 0], // up
-    [1, 0],  // down
-    [0, -1], // left
-    [0, 1],  // right
+function neighbors(r: number, c: number): Array<[number, number]> {
+  return [
+    [r - 1, c],
+    [r + 1, c],
+    [r, c - 1],
+    [r, c + 1],
   ];
-  const out: CellCoord[] = [];
-  for (const [dr, dc] of deltas) {
-    const n = { row: coord.row + dr, col: coord.col + dc };
-    if (isWithinBoard(n, boardSize)) out.push(n);
+}
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
   }
-  return out;
+  return a;
 }
 
-function cloneFired(fired: boolean[][]): boolean[][] {
-  return fired.map((row) => row.slice());
+function isUnknown(state: AIState, r: number, c: number): boolean {
+  return inBounds(r, c) && state.shots[r][c] === 'unknown';
 }
 
-/**
- * Decide the AI's next move.
- *  - Target mode: drains the queue, skipping any cell already fired upon.
- *  - Hunt mode: checkerboard parity (row+col even) for efficiency,
- *    falling back to any remaining cell if parity is exhausted.
- */
-export function getAIMove(
-  memory: AIMemory,
-  boardSize: number,
-  rng: () => number = Math.random,
-): CellCoord {
-  if (boardSize !== memory.boardSize) {
-    throw new Error(
-      `getAIMove: boardSize ${boardSize} does not match memory.boardSize ${memory.boardSize}`,
+function recomputeTargetQueue(state: AIState): void {
+  state.targetQueue = [];
+  const hits = state.currentHits;
+  if (hits.length === 0) return;
+
+  // Hard mode + 2+ hits: lock onto the line.
+  if (state.difficulty === 'hard' && hits.length >= 2) {
+    const sameRow = hits.every((h) => h[0] === hits[0][0]);
+    const sameCol = hits.every((h) => h[1] === hits[0][1]);
+    if (sameRow) {
+      const row = hits[0][0];
+      const cols = hits.map((h) => h[1]).sort((a, b) => a - b);
+      const left: [number, number] = [row, cols[0] - 1];
+      const right: [number, number] = [row, cols[cols.length - 1] + 1];
+      if (isUnknown(state, left[0], left[1])) state.targetQueue.push(left);
+      if (isUnknown(state, right[0], right[1])) state.targetQueue.push(right);
+      return;
+    }
+    if (sameCol) {
+      const col = hits[0][1];
+      const rows = hits.map((h) => h[0]).sort((a, b) => a - b);
+      const up: [number, number] = [rows[0] - 1, col];
+      const down: [number, number] = [rows[rows.length - 1] + 1, col];
+      if (isUnknown(state, up[0], up[1])) state.targetQueue.push(up);
+      if (isUnknown(state, down[0], down[1])) state.targetQueue.push(down);
+      return;
+    }
+    // not collinear — fall through to neighbor strategy
+  }
+
+  // Default target: neighbors of the most recent hit, shuffled.
+  const [r, c] = hits[hits.length - 1];
+  const cands = neighbors(r, c).filter(([nr, nc]) => isUnknown(state, nr, nc));
+  state.targetQueue = shuffle(cands);
+}
+
+function huntShot(state: AIState): [number, number] {
+  const minLen =
+    state.remainingLengths.length > 0 ? Math.min(...state.remainingLengths) : 2;
+  const parity: Array<[number, number]> = [];
+  const any: Array<[number, number]> = [];
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      if (state.shots[r][c] !== 'unknown') continue;
+      any.push([r, c]);
+      if ((r + c) % minLen === 0) parity.push([r, c]);
+    }
+  }
+  if (state.difficulty === 'hard' && parity.length > 0) {
+    return parity[Math.floor(Math.random() * parity.length)];
+  }
+  return any[Math.floor(Math.random() * any.length)];
+}
+
+export function chooseShot(state: AIState): [number, number] {
+  while (state.targetQueue.length > 0) {
+    const [r, c] = state.targetQueue.pop()!;
+    if (isUnknown(state, r, c)) return [r, c];
+  }
+  return huntShot(state);
+}
+
+export function recordResult(
+  state: AIState,
+  r: number,
+  c: number,
+  result: 'miss' | 'hit' | 'sunk',
+  sunkShip?: PlacedShip,
+): void {
+  if (result === 'miss') {
+    state.shots[r][c] = 'miss';
+    // queue automatically drained; if we have currentHits, recompute to grab the other end of the line
+    if (state.currentHits.length > 0) recomputeTargetQueue(state);
+    return;
+  }
+
+  if (result === 'hit') {
+    state.shots[r][c] = 'hit';
+    state.currentHits.push([r, c]);
+    recomputeTargetQueue(state);
+    return;
+  }
+
+  // sunk
+  state.shots[r][c] = 'hit';
+  state.currentHits.push([r, c]);
+  if (sunkShip) {
+    for (const [sr, sc] of shipCells(
+      sunkShip.row,
+      sunkShip.col,
+      sunkShip.length,
+      sunkShip.orientation,
+    )) {
+      state.shots[sr][sc] = 'sunk';
+    }
+    // remove this ship's length from remaining
+    const idx = state.remainingLengths.indexOf(sunkShip.length);
+    if (idx >= 0) state.remainingLengths.splice(idx, 1);
+    // drop hits that belong to this sunk ship
+    state.currentHits = state.currentHits.filter(
+      ([hr, hc]) => state.shots[hr][hc] !== 'sunk',
     );
+  } else {
+    state.currentHits = [];
   }
-
-  // Target mode: prefer queued neighbours of unsunk hits.
-  for (const candidate of memory.targetQueue) {
-    if (
-      isWithinBoard(candidate, boardSize) &&
-      !memory.fired[candidate.row][candidate.col]
-    ) {
-      return candidate;
-    }
-  }
-
-  // Hunt mode with checkerboard parity.
-  const evenCells: CellCoord[] = [];
-  const oddCells: CellCoord[] = [];
-  for (let r = 0; r < boardSize; r++) {
-    for (let c = 0; c < boardSize; c++) {
-      if (memory.fired[r][c]) continue;
-      ((r + c) % 2 === 0 ? evenCells : oddCells).push({ row: r, col: c });
-    }
-  }
-  const pool = evenCells.length > 0 ? evenCells : oddCells;
-  if (pool.length === 0) {
-    throw new Error('getAIMove: every cell has been fired upon');
-  }
-  return pool[Math.floor(rng() * pool.length)];
-}
-
-/**
- * Update memory after an AI shot resolves. Returns a new memory object;
- * the input is not mutated.
- */
-export function updateAIMemory(
-  memory: AIMemory,
-  coord: CellCoord,
-  feedback: AIShotFeedback,
-): AIMemory {
-  if (!isWithinBoard(coord, memory.boardSize)) {
-    throw new Error(`updateAIMemory: coord out of bounds (${coord.row},${coord.col})`);
-  }
-
-  const fired = cloneFired(memory.fired);
-  fired[coord.row][coord.col] = true;
-
-  // Drop the just-fired coord from the queue regardless of outcome.
-  let targetQueue = memory.targetQueue.filter(
-    (c) => !(c.row === coord.row && c.col === coord.col),
-  );
-  let activeHits = memory.activeHits.slice();
-
-  if (feedback.outcome === 'hit') {
-    activeHits = [...activeHits, coord];
-    // Enqueue any in-bounds, un-fired, not-already-queued neighbours.
-    const queued = new Set(targetQueue.map(coordKey));
-    queued.add(coordKey(coord)); // don't re-queue ourselves
-    for (const n of getNeighborTargets(coord, memory.boardSize)) {
-      const key = coordKey(n);
-      if (queued.has(key)) continue;
-      if (fired[n.row][n.col]) continue;
-      targetQueue.push(n);
-      queued.add(key);
-    }
-  } else if (feedback.outcome === 'sunk') {
-    // The sinking shot itself is a hit, plus all earlier hits in this ship are
-    // resolved. Drop them from activeHits, then rebuild the queue from any
-    // hits that still belong to other unsunk ships.
-    const sunk = feedback.sunkCells ?? [coord];
-    const sunkKeys = new Set(sunk.map(coordKey));
-    sunkKeys.add(coordKey(coord));
-    activeHits = activeHits.filter((h) => !sunkKeys.has(coordKey(h)));
-
-    if (activeHits.length === 0) {
-      targetQueue = [];
-    } else {
-      const queued = new Set<string>();
-      const rebuilt: CellCoord[] = [];
-      for (const h of activeHits) {
-        for (const n of getNeighborTargets(h, memory.boardSize)) {
-          const key = coordKey(n);
-          if (queued.has(key)) continue;
-          if (fired[n.row][n.col]) continue;
-          rebuilt.push(n);
-          queued.add(key);
-        }
-      }
-      targetQueue = rebuilt;
-    }
-  }
-  // 'miss' and 'repeat' need no extra bookkeeping beyond marking fired.
-
-  return {
-    boardSize: memory.boardSize,
-    fired,
-    targetQueue,
-    activeHits,
-    lastShot: coord,
-  };
+  recomputeTargetQueue(state);
 }
