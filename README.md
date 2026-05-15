@@ -1,39 +1,44 @@
-# Austin Battleship
+# ⚾ Bean Battleship
 
-A vintage, Austin-Texas-themed take on the classic Battleship game. Built with React + TypeScript + Vite. Battle the AI on a 12 × 12 board where every ship is an Austin landmark.
+A Fenway Park-themed take on the classic Battleship game. Built with React + TypeScript + Vite. Command Captain Bean's fleet in a naval battle at Fenway Park, where every ship is a Red Sox landmark.
 
 > **Live game:** _(deploy URL TBD)_
 > **GitHub repo:** _(repo URL TBD)_
 
 ## Description
 
-Austin Battleship is a single-player browser game. Place a fleet of seven Austin landmarks on your 12 × 12 harbour, then trade salvos with a fair AI opponent until one fleet is on the bottom of Lady Bird Lake. The UI is styled like a premium vintage board game: cream typography, navy lake-blue panels, burnt-orange copper enemy waters, gold star accents, beveled metal frames, and a slow-rotating "Keep Austin Weird" badge.
+Bean Battleship is a single-player browser game set at Fenway Park. Place Captain Bean's fleet of five Red Sox-themed ships on a 10 × 10 grid, then battle a smart AI opponent. Choose between **Regular Season** (moderate) or **World Series** (hard) difficulty. The UI features a Fenway Park photo backdrop, Red Sox color palette (monster green, Sox red, cream), baseball-themed UI elements (scoreboard, outs, baseballs for misses), and custom SVG ship illustrations.
 
-## Austin Theme
+## Fleet
 
-Every ship is an Austin landmark or icon, with a hand-drawn SVG illustration and a short flavour fact:
+Every ship is a Fenway Park / Red Sox landmark:
 
-| Ship | Length | Vibe |
+| Ship | Length | Description |
 |---|---|---|
-| **Texas Capitol** | 5 | The pink-granite dome — flagship of the fleet. |
-| **Congress Bats** | 4 | 1.5 million Mexican free-tailed bats swarm at dusk. |
-| **Rainey Street** | 4 | Historic bungalow district turned cocktail-bar row. |
-| **Lady Bird Paddleboard** | 3 | Glide across Lady Bird Lake at sunrise. |
-| **Barton Springs** | 3 | A 68 °F spring-fed pool, the soul of Zilker Park. |
-| **Rustic Tap** | 3 | A West-6th icehouse keeping the taps cold. |
-| **Zilker Kite** | 2 | The Zilker Kite Festival fills the sky every March. |
+| **The Green Monster** | 5 | The iconic 37-foot left field wall |
+| **Pesky's Pole Patrol** | 4 | The right field foul pole, just 302 feet away |
+| **The Citgo Cruiser** | 3 | The famous Citgo sign beyond the Green Monster |
+| **Yawkey Way Destroyer** | 3 | The historic street (now Jersey Street) |
+| **The Monster Seat Sub** | 2 | The lone red seat in right field (Ted Williams' 502-foot homer) |
 
-Visual touches include a CSS-rendered Austin skyline silhouette, star-bracketed panel headers (`★ YOUR FLEET ★`), a compass-style **VS** medallion between the boards, and rotating Austin trivia in the dashboard.
+Visual touches include a real Fenway Park photo backdrop, a mini scoreboard with inning/runs/hits/errors, announcer panel with play-by-play commentary, and shot log tracking every hit and miss.
 
 ## Features
 
-- **12 × 12 board** with rows A–L and columns 1–12.
-- **Strict no-touch placement rule** — ships cannot overlap, touch orthogonally, or touch diagonally.
-- **Click-to-place and drag-and-drop** placement, plus rotate via card button or the `R` key.
-- **Randomize Fleet** and **Clear Fleet** controls.
-- **Fair AI opponent** with hunt/target mode and checkerboard parity. The AI never inspects hidden state — only the engine's hit / miss / sunk feedback.
-- **Battle phase** with hit / miss / sunk animations, "You sank …" messages, and AI turn pacing.
-- **Game-over modal** with star medallion, accuracy, shots fired, ships sunk, and game time.
+- **10 × 10 board** with rows 1–10 and columns A–J
+- **Strict no-touch placement rule** — ships cannot overlap or touch (orthogonally or diagonally)
+- **Click-to-place** placement with rotate via `R` key
+- **Randomize Fleet** and **Clear Fleet** controls
+- **Two AI difficulty levels:**
+  - **Regular Season (Moderate)** — random targeting with basic hunt/target mode
+  - **World Series (Hard)** — parity hunt + line lock (when AI gets 2+ hits, it locks onto the ship's axis)
+- **Baseball-themed UI:**
+  - Mini scoreboard with innings, runs, hits, errors
+  - Announcer panel with play-by-play commentary
+  - Shot log tracking every move
+  - Baseball markers for misses
+  - Red X markers for hits/sunk
+- **Game-over modal** with final stats and replay option
 - **Surrender / Restart / Play Again** controls.
 - **Responsive layout** — desktop three-column shell down to single-column mobile stacking.
 - **Accessibility** — keyboard rotate (`R`), focus rings, ARIA labels, `prefers-reduced-motion` honoured.

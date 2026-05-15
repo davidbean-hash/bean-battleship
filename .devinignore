@@ -1,0 +1,11 @@
+# Devin should ignore these files/folders
+node_modules/
+dist/
+.git/
+*.log
+.DS_Store
+coverage/
+.vite/
+*.tsbuildinfo
+vite.config.d.ts
+vite.config.js

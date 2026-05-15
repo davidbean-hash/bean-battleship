@@ -478,14 +478,14 @@ export default function App() {
           <div className="title-plate">
             <div className="title-banner">
               <span>★</span>
-              <span>FENWAY PARK · EST. 1912</span>
+              <span>FENWAY PARK · BOSTON</span>
               <span>★</span>
             </div>
             <h1>
-              FENWAY <span className="amp">FLEET</span>
+              BEAN <span className="amp">BATTLESHIP</span>
             </h1>
             <div className="title-subbanner">
-              ★ BATTLE FOR THE GREEN MONSTER ★
+              ★ CAPTAIN BEAN'S FLEET ★
             </div>
           </div>
 
@@ -527,7 +527,7 @@ export default function App() {
           </div>
         </div>
         <footer className="landing-footer">
-          A Battleship-style game · Fenway Park theme
+          A Battleship-style game · Captain Bean commanding
         </footer>
       </div>
     );
@@ -546,14 +546,14 @@ export default function App() {
           <div className="title-plate-game">
             <div className="title-banner small">
               <span>★</span>
-              <span>FENWAY PARK · EST. 1912</span>
+              <span>FENWAY PARK · BOSTON</span>
               <span>★</span>
             </div>
             <h1>
-              FENWAY <span className="amp">FLEET</span>
+              BEAN <span className="amp">BATTLESHIP</span>
             </h1>
             <div className="title-subbanner small">
-              ★ BATTLE FOR THE GREEN MONSTER ★
+              ★ CAPTAIN BEAN'S FLEET ★
             </div>
           </div>
           <div className="brand-citgo" aria-hidden>
@@ -792,7 +792,7 @@ export default function App() {
                     return (
                       <div className="headline-text">
                         <span className="hl-small">welcome to</span>
-                        <span className="hl-big">FENWAY!</span>
+                        <span className="hl-big">THE PARK!</span>
                       </div>
                     );
                   }

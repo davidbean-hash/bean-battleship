@@ -29,9 +29,9 @@ export interface BoardState {
 }
 
 export const FLEET: ShipSpec[] = [
-  { id: 'green-monster', name: 'The Green Monster', length: 5 },
-  { id: 'peskys-pole', name: "Pesky's Pole Patrol", length: 4 },
-  { id: 'citgo', name: 'The Citgo Cruiser', length: 3 },
-  { id: 'yawkey-way', name: 'Yawkey Way Destroyer', length: 3 },
-  { id: 'monster-seat', name: 'The Monster Seat Sub', length: 2 },
+  { id: 'navy-bean', name: 'Navy Bean', length: 5 },
+  { id: 'black-bean', name: 'Black Bean', length: 4 },
+  { id: 'pinto-bean', name: 'Pinto Bean', length: 3 },
+  { id: 'kidney-bean', name: 'Kidney Bean', length: 3 },
+  { id: 'coffee-bean', name: 'Coffee Bean', length: 2 },
 ];
