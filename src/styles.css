@@ -1501,6 +1501,108 @@ kbd {
   margin: 0 0 4px 0;
 }
 
+/* Fleet progress bar */
+.fleet-progress {
+  background: rgba(10, 6, 4, 0.4);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.progress-label {
+  font-family: 'Special Elite', monospace;
+  font-size: 10px;
+  color: var(--cream);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.progress-count {
+  font-family: 'Black Ops One', sans-serif;
+  font-size: 14px;
+  color: var(--sox-red);
+}
+
+.progress-bar {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-segment {
+  background: rgba(245, 233, 207, 0.2);
+  border-radius: 2px;
+  transition: background 0.3s ease;
+}
+
+.progress-segment.placed {
+  background: var(--monster-green);
+  box-shadow: 0 0 4px rgba(45, 107, 65, 0.6);
+}
+
+/* Selected ship preview */
+.selected-ship-preview {
+  background: linear-gradient(to bottom, rgba(245, 233, 207, 0.15), rgba(245, 233, 207, 0.05));
+  border: 2px solid rgba(189, 48, 57, 0.3);
+  border-radius: 8px;
+  padding: 10px;
+  margin: 6px 0;
+}
+
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-family: 'Special Elite', monospace;
+  font-size: 9px;
+  color: #6b4226;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.preview-orientation {
+  color: var(--sox-red);
+  font-weight: 700;
+}
+
+.preview-ship {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.preview-ship .ship-icon {
+  background: rgba(10, 6, 4, 0.3);
+  border-radius: 6px;
+  padding: 6px 10px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.preview-name {
+  font-family: 'Black Ops One', sans-serif;
+  font-size: 13px;
+  color: var(--monster-green-darker);
+}
+
+.preview-placeholder {
+  font-family: 'Special Elite', monospace;
+  font-size: 11px;
+  color: #6b4226;
+  text-align: center;
+  padding: 12px;
+  font-style: italic;
+}
+
 .setup-grid .roster-panel .ship-list {
   gap: 3px;
 }

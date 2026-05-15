@@ -630,12 +630,49 @@ export default function App() {
       {phase === 'setup' && (
         <div className="setup-grid">
           <Panel title="Your Fleet" className="roster-panel">
+            <div className="fleet-progress">
+              <div className="progress-header">
+                <span className="progress-label">Fleet Status</span>
+                <span className="progress-count">{placedIds.size}/{FLEET.length}</span>
+              </div>
+              <div className="progress-bar">
+                {FLEET.map((s) => (
+                  <div
+                    key={s.id}
+                    className={['progress-segment', placedIds.has(s.id) ? 'placed' : ''].join(' ')}
+                    style={{ flex: s.length }}
+                    title={s.name}
+                  />
+                ))}
+              </div>
+            </div>
+
             <p className="hint">
               Pick a ship, then click your field to place it. Press <kbd>R</kbd>{' '}
               or the rotate button to flip it. Keep at least one empty square
               between every ship (including diagonals).
             </p>
             <p className="hint hint-rule">Rule: ships cannot touch, even at corners.</p>
+
+            <div className="selected-ship-preview">
+              <div className="preview-header">
+                <span className="preview-label">Currently Selected</span>
+                {selectedShip && (
+                  <span className="preview-orientation">{orientation === 'H' ? '→ Horizontal' : '↓ Vertical'}</span>
+                )}
+              </div>
+              {selectedShip && !placedIds.has(selectedShip.id) ? (
+                <div className="preview-ship">
+                  <ShipIcon id={selectedShip.id} orientation={orientation} />
+                  <span className="preview-name">{selectedShip.name}</span>
+                </div>
+              ) : (
+                <div className="preview-placeholder">
+                  {allPlaced ? 'All ships placed!' : 'Select a ship from the list below'}
+                </div>
+              )}
+            </div>
+
             <ul className="ship-list">
               {FLEET.map((s) => {
                 const placed = placedIds.has(s.id);
