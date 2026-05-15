@@ -66,6 +66,11 @@ body {
   overflow: hidden;
 }
 
+/* Use dvh where supported so mobile browsers account for toolbar chrome */
+@supports (min-height: 100dvh) {
+  .landing, .app { min-height: 100dvh; }
+}
+
 body {
   background-color: #0a0604;
   background-image:
@@ -143,6 +148,20 @@ kbd {
   display: flex;
   flex-direction: column;
   min-width: 0;
+}
+
+@media (max-height: 580px), (max-width: 480px) {
+  html,
+  body,
+  #root {
+    overflow-y: auto;
+    height: auto;
+  }
+  .landing {
+    height: auto;
+    min-height: 100vh;
+    overflow-y: auto;
+  }
 }
 
 .fenway-backdrop {
@@ -379,8 +398,38 @@ kbd {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: clamp(24px, 4vw, 48px);
-  padding: clamp(24px, 4vw, 60px);
+  gap: clamp(16px, 3vw, 48px);
+  padding: clamp(16px, 3vw, 60px);
+}
+
+@media (max-width: 480px) {
+  .landing-content {
+    padding: 16px 12px;
+    gap: 14px;
+    justify-content: flex-start;
+    padding-top: clamp(24px, 6vh, 48px);
+  }
+  .title-plate {
+    max-width: 92vw;
+    padding-left: 8px;
+    padding-right: 8px;
+    box-sizing: border-box;
+  }
+  .title-plate h1 {
+    font-size: clamp(22px, 8.5vw, 44px);
+    -webkit-text-stroke: 1px var(--monster-green-darker);
+    margin: 6px 0;
+  }
+  .title-banner,
+  .title-subbanner {
+    padding: 4px 14px;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+  }
+  .landing-card {
+    min-width: 0;
+    width: 100%;
+  }
 }
 
 .title-plate {
@@ -437,9 +486,11 @@ kbd {
     0 0 0 4px var(--ink),
     0 0 0 8px var(--gold),
     0 18px 40px rgba(0, 0, 0, 0.6);
-  min-width: min(480px, 90vw);
+  min-width: min(480px, 88vw);
   max-width: 92vw;
   text-align: center;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .landing-card h3 {
@@ -604,6 +655,12 @@ kbd {
     height: auto;
     min-height: 100vh;
     overflow: visible;
+  }
+}
+
+@media (max-width: 480px) {
+  .app {
+    padding: clamp(4px, 1vw, 8px);
   }
 }
 
@@ -1017,8 +1074,19 @@ kbd {
     max-height: none;
     width: 100%;
     max-width: 100%;
-    aspect-ratio: auto;
-    grid-template-rows: 18px repeat(10, minmax(28px, 1fr));
+    aspect-ratio: 1 / 1;
+    grid-template-rows: 18px repeat(10, 1fr);
+  }
+}
+
+@media (max-width: 380px) {
+  .board-grid {
+    grid-template-columns: 12px repeat(10, 1fr);
+    grid-template-rows: 12px repeat(10, 1fr);
+    padding: 2px;
+  }
+  .axis-label {
+    font-size: 8px;
   }
 }
 
@@ -1271,8 +1339,8 @@ kbd {
   .play-grid {
     grid-template-columns: 1fr;
     grid-template-areas:
-      'your'
       'enemy'
+      'your'
       'left'
       'right';
     gap: 8px;
@@ -1287,6 +1355,30 @@ kbd {
   .side-stack.right > .panel {
     flex: 1 1 100%;
     min-width: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .play-grid {
+    gap: 6px;
+  }
+
+  .panel-header {
+    padding: 5px 10px;
+    gap: 8px;
+  }
+
+  .panel-header h2 {
+    font-size: 12px;
+    letter-spacing: 0.12em;
+  }
+
+  .panel-body {
+    padding: 8px;
+  }
+
+  .field-panel .panel-body {
+    padding: 4px;
   }
 }
 
@@ -1898,6 +1990,20 @@ kbd {
   min-height: 40px;
 }
 
+@media (max-width: 480px) {
+  .setup-grid .roster-panel .panel-body {
+    padding: 8px;
+    gap: 6px;
+  }
+  .setup-grid .roster-panel .ship-card-btn {
+    padding: 5px 8px;
+  }
+  .placement-actions button {
+    padding: 8px;
+    font-size: 11px;
+  }
+}
+
 .side-stack {
   height: 100%;
   overflow: hidden;
@@ -2246,14 +2352,37 @@ kbd {
   }
 }
 
-@media (max-width: 420px) {
+@media (max-width: 480px) {
   .brand-inner {
     grid-template-columns: 1fr;
     justify-items: center;
     text-align: center;
+    padding: 6px 8px;
   }
   .scoreboard {
     justify-self: center;
+  }
+  .title-plate-game {
+    padding: 4px 12px;
+  }
+  .title-plate-game h1 {
+    font-size: clamp(14px, 7vw, 28px);
+  }
+  .title-banner.small,
+  .title-subbanner.small {
+    font-size: 8px;
+    padding: 2px 10px;
+    letter-spacing: 0.15em;
+  }
+  .sb-cell {
+    padding: 2px 6px;
+    min-width: 28px;
+  }
+  .sb-val {
+    font-size: clamp(14px, 4vw, 20px);
+  }
+  .sb-label {
+    font-size: 8px;
   }
 }
 
@@ -2460,6 +2589,21 @@ kbd {
 @media (max-width: 760px), (max-height: 680px) {
   .bottom-row {
     gap: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .bottom-row {
+    grid-template-areas: 'cta';
+    grid-template-columns: 1fr;
+  }
+  .mini-scoreboard,
+  .announcer-box {
+    display: none;
+  }
+  .end-turn {
+    font-size: clamp(12px, 3.5vw, 16px);
+    padding: 8px 12px;
   }
 }
 
@@ -3009,4 +3153,23 @@ button:focus-visible,
   .game-over-card h2 { font-size: 22px; margin-bottom: 12px; }
   .go-banner { letter-spacing: 0.24em; padding: 4px 12px; }
   .go-stat-val { font-size: 14px; }
+}
+
+@media (max-width: 380px) {
+  .game-over-card {
+    padding: 14px 10px;
+  }
+  .game-over-card h2 {
+    font-size: 18px;
+  }
+  .go-stat-label {
+    font-size: 10px;
+  }
+  .go-stat-val {
+    font-size: 13px;
+  }
+  .play-ball {
+    font-size: 18px;
+    padding: 10px 24px;
+  }
 }
