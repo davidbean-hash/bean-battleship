@@ -1448,10 +1448,6 @@ kbd {
   font-size: clamp(11px, 1.3vw, 16px);
 }
 
-.side-stack.right .hl-small {
-  font-size: 10px;
-}
-
 .side-stack.right .headline-b .b-logo {
   width: 18px;
   height: 18px;
@@ -1553,6 +1549,29 @@ kbd {
 }
 .cell.sunk {
   background: var(--sox-red-dark);
+  overflow: hidden;
+}
+
+.cell.sunk::before,
+.cell.sunk::after {
+  content: '';
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 50%;
+  height: 3px;
+  background: var(--cream);
+  border-radius: 999px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.65);
+  z-index: 2;
+}
+
+.cell.sunk::before {
+  transform: rotate(45deg);
+}
+
+.cell.sunk::after {
+  transform: rotate(-45deg);
 }
 
 /* ====================================================
@@ -1994,4 +2013,150 @@ kbd {
 .headline-b .b-logo {
   width: 22px;
   height: 22px;
+}
+
+/* ====================================================
+   HOMERUN ANIMATION (Ball Out of the Park)
+   ==================================================== */
+
+.homer-effect {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.homer-ball {
+  position: absolute;
+  left: 18vw;
+  bottom: 18vh;
+  width: clamp(22px, 3vw, 42px);
+  height: clamp(22px, 3vw, 42px);
+  border-radius: 50%;
+  background:
+    linear-gradient(90deg, transparent 42%, rgba(189, 48, 57, 0.9) 42% 48%, transparent 48% 52%, rgba(189, 48, 57, 0.9) 52% 58%, transparent 58%),
+    radial-gradient(circle at 35% 30%, #fff 0 18%, #f5e9cf 19% 100%);
+  border: 2px solid rgba(42, 28, 17, 0.75);
+  box-shadow:
+    0 8px 18px rgba(0, 0, 0, 0.35),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.15);
+  animation: homer-ball-flight 1.55s cubic-bezier(0.19, 0.78, 0.29, 1) forwards;
+}
+
+.homer-effect.cpu .homer-ball {
+  left: auto;
+  right: 18vw;
+  animation-name: homer-ball-flight-cpu;
+}
+
+.homer-trail {
+  position: absolute;
+  left: 14vw;
+  bottom: 17vh;
+  width: 42vw;
+  height: 22vh;
+  border-top: 4px solid rgba(245, 233, 207, 0.8);
+  border-radius: 50% 50% 0 0;
+  transform: rotate(-18deg);
+  opacity: 0;
+  filter: drop-shadow(0 0 6px rgba(212, 167, 71, 0.8));
+  animation: homer-trail-pop 1.1s ease-out forwards;
+}
+
+.homer-effect.cpu .homer-trail {
+  left: auto;
+  right: 14vw;
+  transform: scaleX(-1) rotate(-18deg);
+}
+
+.homer-call {
+  position: absolute;
+  left: 50%;
+  top: 18%;
+  transform: translateX(-50%) scale(0.85);
+  padding: clamp(8px, 1.4vw, 14px) clamp(14px, 2vw, 24px);
+  border: 3px solid var(--cream);
+  border-radius: 6px;
+  background: rgba(122, 28, 34, 0.92);
+  color: var(--cream);
+  font-family: 'Black Ops One', sans-serif;
+  font-size: clamp(20px, 3vw, 44px);
+  letter-spacing: 0.05em;
+  text-align: center;
+  text-shadow: 2px 2px 0 #000;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  animation: homer-call-pop 1.35s ease-out forwards;
+}
+
+@keyframes homer-ball-flight {
+  0% {
+    transform: translate(0, 0) scale(0.65) rotate(0deg);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  58% {
+    transform: translate(33vw, -42vh) scale(1.1) rotate(420deg);
+  }
+  100% {
+    transform: translate(70vw, -72vh) scale(0.35) rotate(900deg);
+    opacity: 0;
+  }
+}
+
+@keyframes homer-ball-flight-cpu {
+  0% {
+    transform: translate(0, 0) scale(0.65) rotate(0deg);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  58% {
+    transform: translate(-33vw, -42vh) scale(1.1) rotate(-420deg);
+  }
+  100% {
+    transform: translate(-70vw, -72vh) scale(0.35) rotate(-900deg);
+    opacity: 0;
+  }
+}
+
+@keyframes homer-trail-pop {
+  0% {
+    clip-path: inset(0 100% 0 0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  75% {
+    clip-path: inset(0 0 0 0);
+    opacity: 0.85;
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+    opacity: 0;
+  }
+}
+
+@keyframes homer-call-pop {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.65) rotate(-2deg);
+  }
+  22% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.05) rotate(1deg);
+  }
+  70% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.95) rotate(0deg);
+  }
 }

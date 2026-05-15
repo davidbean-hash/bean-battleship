@@ -146,11 +146,11 @@ const drawCoffeeBean = (): ReactNode => (
 );
 
 const SHIPS: Record<string, { length: number; draw: () => ReactNode }> = {
-  'navy-bean': { length: 5, draw: drawNavyBean },
-  'black-bean': { length: 4, draw: drawBlackBean },
-  'pinto-bean': { length: 3, draw: drawPintoBean },
-  'kidney-bean': { length: 3, draw: drawKidneyBean },
-  'coffee-bean': { length: 2, draw: drawCoffeeBean },
+  'green-monster': { length: 5, draw: drawNavyBean },
+  'peskys-pole': { length: 4, draw: drawBlackBean },
+  citgo: { length: 3, draw: drawPintoBean },
+  'yawkey-way': { length: 3, draw: drawKidneyBean },
+  'monster-seat': { length: 2, draw: drawCoffeeBean },
 };
 
 export function ShipIcon({ id, orientation = 'H', className }: ShipIconProps) {

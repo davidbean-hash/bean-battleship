@@ -85,14 +85,23 @@ function BoardView({
   return (
     <div className="board-grid" onMouseLeave={onCellLeave}>
       <div />
-      {COL_LABELS.map((l) => (
-        <div key={`c${l}`} className="axis-label">
+      {COL_LABELS.map((l, c) => (
+        <div
+          key={`c${l}`}
+          className="axis-label axis-label-x"
+          style={{ gridColumn: c + 2, gridRow: 1 }}
+        >
           {l}
         </div>
       ))}
       {ROW_LABELS.map((rowL, r) => (
         <Fragment key={`row-${rowL}`}>
-          <div className="axis-label">{rowL}</div>
+          <div
+            className="axis-label axis-label-y"
+            style={{ gridColumn: 1, gridRow: r + 2 }}
+          >
+            {rowL}
+          </div>
           {COL_LABELS.map((_, c) => {
             const shot = board.shots[r][c];
             const inPreview = previewSet.has(`${r},${c}`);
@@ -107,6 +116,7 @@ function BoardView({
               <button
                 key={`${r}-${c}`}
                 className={classes.join(' ')}
+                style={{ gridColumn: c + 2, gridRow: r + 2 }}
                 disabled={!interactive || shot !== 'unknown'}
                 onClick={() => onCellClick?.(r, c)}
                 onMouseEnter={() => onCellEnter?.(r, c)}
@@ -252,6 +262,11 @@ export default function App() {
     aiHits: 0,
   });
   const [shotLog, setShotLog] = useState<ShotLogEntry[]>([]);
+  const [homerEffect, setHomerEffect] = useState<{
+    id: number;
+    who: 'you' | 'cpu';
+    shipName: string;
+  } | null>(null);
   const aiTimer = useRef<number | null>(null);
 
   // --- Placement state ---
@@ -262,6 +277,16 @@ export default function App() {
 
   const selectedShip = FLEET.find((s) => s.id === selectedShipId) ?? null;
   const allPlaced = placedIds.size === FLEET.length;
+
+  function triggerHomerEffect(who: 'you' | 'cpu', shipName: string) {
+    setHomerEffect({ id: Date.now(), who, shipName });
+  }
+
+  useEffect(() => {
+    if (!homerEffect) return undefined;
+    const timer = window.setTimeout(() => setHomerEffect(null), 1800);
+    return () => window.clearTimeout(timer);
+  }, [homerEffect]);
 
   const previewCells: Array<[number, number]> = useMemo(() => {
     if (phase !== 'setup' || !hover || !selectedShip) return [];
@@ -360,6 +385,7 @@ export default function App() {
     setOrientation('H');
     setAiBoard(randomizeBoard());
     setShotLog([]);
+    setHomerEffect(null);
     setWinner(null);
     setMessage('Place your fleet, then play ball.');
   }
@@ -386,6 +412,7 @@ export default function App() {
       ...log,
     ]);
     if (res.result === 'sunk') {
+      triggerHomerEffect('you', res.sunkShip!.name);
       setMessage(`Going, going, GONE! You sank ${res.sunkShip!.name}!`);
     } else if (res.result === 'hit') {
       setMessage('Crack of the bat — base hit!');
@@ -438,6 +465,7 @@ export default function App() {
         ...log,
       ]);
       if (res.result === 'sunk') {
+        triggerHomerEffect('cpu', res.sunkShip!.name);
         setMessage(
           `That ball is HEADED OVER THE GREEN MONSTER! They sank your ${res.sunkShip!.name}.`,
         );
@@ -966,6 +994,20 @@ export default function App() {
                 <button className="play-ball" onClick={newGame}>
                   PLAY AGAIN
                 </button>
+              </div>
+            </div>
+          )}
+          {homerEffect && (
+            <div
+              key={homerEffect.id}
+              className={`homer-effect ${homerEffect.who}`}
+              aria-live="polite"
+            >
+              <div className="homer-trail" aria-hidden />
+              <div className="homer-ball" aria-hidden />
+              <div className="homer-call">
+                {homerEffect.who === 'you' ? 'HOME RUN!' : 'GONE!'}{' '}
+                {homerEffect.shipName} sunk
               </div>
             </div>
           )}
