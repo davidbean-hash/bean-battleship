@@ -682,9 +682,23 @@ export default function App() {
                 Clear
               </button>
             </div>
+            <div className="play-ball-container">
+              <button
+                className="play-ball-big"
+                onClick={startGame}
+                disabled={!allPlaced}
+              >
+                {allPlaced
+                  ? 'PLAY BALL'
+                  : `${FLEET.length - placedIds.size} ship(s) to go`}
+              </button>
+            </div>
           </Panel>
 
           <Panel title="Your Field" className="field-panel">
+            <div className="field-status">
+              {placedIds.size}/{FLEET.length} ships placed
+            </div>
             <BoardView
               board={playerBoard}
               revealShips
@@ -695,20 +709,6 @@ export default function App() {
               previewCells={previewCells}
               previewValid={previewValid}
             />
-            <div className="field-footer">
-              <span>
-                {placedIds.size}/{FLEET.length} ships placed
-              </span>
-              <button
-                className="primary play-ball-sm"
-                onClick={startGame}
-                disabled={!allPlaced}
-              >
-                {allPlaced
-                  ? 'PLAY BALL'
-                  : `${FLEET.length - placedIds.size} ship(s) to go`}
-              </button>
-            </div>
           </Panel>
         </div>
       )}
