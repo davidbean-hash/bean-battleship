@@ -1275,7 +1275,7 @@ kbd {
   gap: clamp(6px, 1vw, 14px);
   align-items: stretch;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .play-grid > * {
@@ -1304,8 +1304,7 @@ kbd {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-areas:
       'your enemy'
-      'left left'
-      'right right';
+      'left right';
     grid-auto-rows: auto;
     align-items: start;
     overflow: visible;
@@ -1327,6 +1326,7 @@ kbd {
   .side-stack.right > .panel {
     flex: 1 1 200px;
     min-width: 180px;
+    height: auto;
     overflow: visible;
   }
 
@@ -1353,8 +1353,9 @@ kbd {
 
   .side-stack.left > .panel,
   .side-stack.right > .panel {
-    flex: 1 1 100%;
+    flex: 1 1 auto;
     min-width: 0;
+    height: auto;
   }
 }
 
@@ -1386,6 +1387,11 @@ kbd {
   display: flex;
   flex-direction: column;
   gap: clamp(8px, 1.2vw, 14px);
+}
+
+.side-stack > .panel {
+  flex: 1 1 0;
+  min-height: 0;
 }
 
 /* Last Shot panel */
