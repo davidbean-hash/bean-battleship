@@ -48,6 +48,26 @@ function coord(r: number, c: number): string {
   return `${COL_LABELS[c]}${r + 1}`;
 }
 
+function longestStreak(
+  who: 'you' | 'cpu',
+  log: { who: 'you' | 'cpu'; result: 'miss' | 'hit' | 'sunk' }[],
+): number {
+  // log is most-recent-first; iterate in chronological order
+  let best = 0;
+  let cur = 0;
+  for (let i = log.length - 1; i >= 0; i--) {
+    const entry = log[i];
+    if (entry.who !== who) continue;
+    if (entry.result === 'hit' || entry.result === 'sunk') {
+      cur += 1;
+      if (cur > best) best = cur;
+    } else {
+      cur = 0;
+    }
+  }
+  return best;
+}
+
 interface ShotLogEntry {
   who: 'you' | 'cpu';
   r: number;
@@ -507,6 +527,80 @@ export default function App() {
   const lastShot = shotLog[0];
   const recentShots = useMemo(() => shotLog.slice(0, 5), [shotLog]);
 
+  // ----- Real scoreboard derivations -----
+  // Group player shots into innings of 3, count hits per inning (max 9 innings shown).
+  const innings = useMemo(() => {
+    const chrono = [...shotLog].reverse();
+    const you: (number | '·')[] = Array(9).fill('·');
+    const cpu: (number | '·')[] = Array(9).fill('·');
+    let youIdx = 0;
+    let cpuIdx = 0;
+    let youInInning = 0;
+    let cpuInInning = 0;
+    let youHits = 0;
+    let cpuHits = 0;
+    for (const s of chrono) {
+      if (s.who === 'you') {
+        if (youInInning === 0) you[youIdx] = 0;
+        if (s.result !== 'miss' && youIdx < 9) {
+          youHits += 1;
+          you[youIdx] = (you[youIdx] as number) + 1;
+        }
+        youInInning += 1;
+        if (youInInning === 3) {
+          youInInning = 0;
+          youIdx = Math.min(youIdx + 1, 9);
+        }
+      } else {
+        if (cpuInInning === 0) cpu[cpuIdx] = 0;
+        if (s.result !== 'miss' && cpuIdx < 9) {
+          cpuHits += 1;
+          cpu[cpuIdx] = (cpu[cpuIdx] as number) + 1;
+        }
+        cpuInInning += 1;
+        if (cpuInInning === 3) {
+          cpuInInning = 0;
+          cpuIdx = Math.min(cpuIdx + 1, 9);
+        }
+      }
+    }
+    void youHits;
+    void cpuHits;
+    return { you, cpu };
+  }, [shotLog]);
+
+  // Balls = CPU's most recent consecutive misses (good for you).
+  // Strikes = your most recent consecutive misses (swinging and missing).
+  const { balls, strikes } = useMemo(() => {
+    let b = 0;
+    let s = 0;
+    let bDone = false;
+    let sDone = false;
+    for (const sh of shotLog) {
+      if (!bDone && sh.who === 'cpu') {
+        if (sh.result === 'miss') b += 1;
+        else bDone = true;
+      }
+      if (!sDone && sh.who === 'you') {
+        if (sh.result === 'miss') s += 1;
+        else sDone = true;
+      }
+      if (bDone && sDone) break;
+    }
+    return { balls: Math.min(b, 3), strikes: Math.min(s, 3) };
+  }, [shotLog]);
+
+  // Outs = your ships that have been sunk.
+  const outs = useMemo(
+    () => Math.min(3, playerBoard.ships.filter((sh) => sh.hits >= sh.length).length),
+    [playerBoard],
+  );
+
+  const inning = useMemo(
+    () => Math.min(9, Math.max(1, Math.ceil(stats.youShots / 3) || 1)),
+    [stats.youShots],
+  );
+
   // -------------------- LANDING --------------------
   if (phase === 'landing') {
     return (
@@ -603,9 +697,7 @@ export default function App() {
           <div className="scoreboard">
             <div className="sb-cell">
               <div className="sb-label">INNING</div>
-              <div className="sb-val">
-                {phase === 'over' ? 'F' : Math.min(9, Math.floor(stats.youShots / 3) + 1)}
-              </div>
+              <div className="sb-val">{phase === 'over' ? 'F' : inning}</div>
             </div>
             <div className="sb-cell">
               <div className="sb-label you">YOU</div>
@@ -617,10 +709,10 @@ export default function App() {
             </div>
             <div className="sb-cell outs">
               <div className="sb-label">OUTS</div>
-              <div className="outs-dots">
-                <span className={stats.youShots > 0 ? 'on' : ''} />
-                <span className={stats.youShots > 1 ? 'on' : ''} />
-                <span className={stats.youShots > 2 ? 'on' : ''} />
+              <div className="outs-dots" aria-label={`${outs} of 3 outs`}>
+                <span className={outs > 0 ? 'on' : ''} />
+                <span className={outs > 1 ? 'on' : ''} />
+                <span className={outs > 2 ? 'on' : ''} />
               </div>
             </div>
           </div>
@@ -648,11 +740,8 @@ export default function App() {
             </div>
 
             <p className="hint">
-              Pick a ship, then click your field to place it. Press <kbd>R</kbd>{' '}
-              or the rotate button to flip it. Keep at least one empty square
-              between every ship (including diagonals).
+              Pick a ship, click your field to place. <kbd>R</kbd> rotates. Ships cannot touch (even diagonally).
             </p>
-            <p className="hint hint-rule">Rule: ships cannot touch, even at corners.</p>
 
             {!allPlaced ? (
               <div className="selected-ship-preview">
@@ -855,7 +944,7 @@ export default function App() {
             <div className="side-stack right">
               <Panel title="Last Shot" className="lastshot-panel">
                 {lastShot ? (
-                  <div className="lastshot">
+                  <div className="lastshot" key={shotLog.length}>
                     <div className={`lastshot-coord ${lastShot.result}`}>
                       {coord(lastShot.r, lastShot.c)}
                     </div>
@@ -927,7 +1016,7 @@ export default function App() {
                 ) : (
                   <ul className="log-list">
                     {recentShots.map((s, i) => (
-                      <li key={i} className={`log-item ${s.result}`}>
+                      <li key={shotLog.length - i} className={`log-item ${s.result}`}>
                         <span className="log-who">
                           {s.who === 'you' ? 'You' : 'CPU'}
                         </span>
@@ -976,26 +1065,26 @@ export default function App() {
                 <tbody>
                   <tr>
                     <td className="team">BOSTON</td>
-                    {Array.from({ length: 9 }).map((_, i) => (
-                      <td key={`b${i}`}>·</td>
+                    {innings.you.map((v, i) => (
+                      <td key={`b${i}`} className={v !== '·' ? 'played' : ''}>{v}</td>
                     ))}
                     <td className="rhe">{stats.youHits}</td>
                     <td className="rhe">{stats.youShots}</td>
-                    <td className="rhe">0</td>
+                    <td className="rhe">{stats.youShots - stats.youHits}</td>
                   </tr>
                   <tr>
-                    <td className="team">VISITOR</td>
-                    {Array.from({ length: 9 }).map((_, i) => (
-                      <td key={`v${i}`}>·</td>
+                    <td className="team visitor">VISITOR</td>
+                    {innings.cpu.map((v, i) => (
+                      <td key={`v${i}`} className={v !== '·' ? 'played' : ''}>{v}</td>
                     ))}
                     <td className="rhe">{stats.aiHits}</td>
                     <td className="rhe">{stats.aiShots}</td>
-                    <td className="rhe">0</td>
+                    <td className="rhe">{stats.aiShots - stats.aiHits}</td>
                   </tr>
                 </tbody>
               </table>
               <div className="ms-bottom">
-                <div className="ms-chip">
+                <div className={`ms-chip at-bat ${turn === 'you' ? 'you' : 'cpu'}`}>
                   <span className="ms-chip-label">AT BAT</span>
                   <span className="ms-chip-val">
                     {turn === 'you' ? 'YOU' : 'CPU'}
@@ -1003,20 +1092,21 @@ export default function App() {
                 </div>
                 <div className="ms-chip">
                   <span className="ms-chip-label">BALL</span>
-                  <span className="dot green" />
-                  <span className="dot green" />
-                  <span className="dot off" />
+                  {[0, 1, 2].map((i) => (
+                    <span key={i} className={`dot ${i < balls ? 'green' : 'off'}`} />
+                  ))}
                 </div>
                 <div className="ms-chip">
                   <span className="ms-chip-label">STRIKE</span>
-                  <span className="dot red" />
-                  <span className="dot off" />
+                  {[0, 1].map((i) => (
+                    <span key={i} className={`dot ${i < strikes ? 'red' : 'off'}`} />
+                  ))}
                 </div>
                 <div className="ms-chip">
                   <span className="ms-chip-label">OUT</span>
-                  <span className="dot red" />
-                  <span className="dot off" />
-                  <span className="dot off" />
+                  {[0, 1, 2].map((i) => (
+                    <span key={i} className={`dot ${i < outs ? 'red' : 'off'}`} />
+                  ))}
                 </div>
               </div>
             </div>
@@ -1036,27 +1126,90 @@ export default function App() {
             <div className="bottom-cta">
               <button
                 className="end-turn"
-                onClick={phase === 'over' ? newGame : newGame}
+                onClick={newGame}
+                aria-label={phase === 'over' ? 'Start a new game' : 'Surrender and start over'}
               >
                 {phase === 'over' ? 'NEW GAME' : 'END TURN'}
-              </button>
-              <button className="options-btn" onClick={newGame}>
-                OPTIONS ⚙
               </button>
             </div>
           </div>
 
           {phase === 'over' && (
-            <div className="game-over">
+            <div className="game-over" role="dialog" aria-modal="true" aria-labelledby="game-over-title">
               <div className="game-over-card">
-                <h2>{winner === 'you' ? 'YOU WIN THE PENNANT!' : 'CPU TAKES THE GAME'}</h2>
-                <p>
-                  Final · You {stats.youHits}/{stats.youShots} · CPU{' '}
-                  {stats.aiHits}/{stats.aiShots}
-                </p>
-                <button className="play-ball" onClick={newGame}>
-                  PLAY AGAIN
-                </button>
+                <div className="go-banner">
+                  <span>★</span>
+                  <span>FINAL</span>
+                  <span>★</span>
+                </div>
+                <h2 id="game-over-title" className={winner === 'you' ? 'go-win' : 'go-lose'}>
+                  {winner === 'you' ? 'YOU WIN THE PENNANT!' : 'CPU TAKES THE GAME'}
+                </h2>
+                <div className="go-stats-grid">
+                  <div className="go-stat-col">
+                    <div className="go-stat-team you">YOU</div>
+                    <div className="go-stat-row">
+                      <span className="go-stat-label">Accuracy</span>
+                      <span className="go-stat-val">
+                        {stats.youShots > 0
+                          ? `${Math.round((stats.youHits / stats.youShots) * 100)}%`
+                          : '—'}
+                      </span>
+                    </div>
+                    <div className="go-stat-row">
+                      <span className="go-stat-label">Hits</span>
+                      <span className="go-stat-val">
+                        {stats.youHits}
+                        <span className="go-stat-sub"> / {stats.youShots}</span>
+                      </span>
+                    </div>
+                    <div className="go-stat-row">
+                      <span className="go-stat-label">Ships sunk</span>
+                      <span className="go-stat-val">
+                        {aiBoard.ships.filter((s) => s.hits >= s.length).length}
+                        <span className="go-stat-sub"> / {FLEET.length}</span>
+                      </span>
+                    </div>
+                    <div className="go-stat-row">
+                      <span className="go-stat-label">Longest streak</span>
+                      <span className="go-stat-val">{longestStreak('you', shotLog)}</span>
+                    </div>
+                  </div>
+                  <div className="go-stat-col">
+                    <div className="go-stat-team cpu">CPU</div>
+                    <div className="go-stat-row">
+                      <span className="go-stat-label">Accuracy</span>
+                      <span className="go-stat-val">
+                        {stats.aiShots > 0
+                          ? `${Math.round((stats.aiHits / stats.aiShots) * 100)}%`
+                          : '—'}
+                      </span>
+                    </div>
+                    <div className="go-stat-row">
+                      <span className="go-stat-label">Hits</span>
+                      <span className="go-stat-val">
+                        {stats.aiHits}
+                        <span className="go-stat-sub"> / {stats.aiShots}</span>
+                      </span>
+                    </div>
+                    <div className="go-stat-row">
+                      <span className="go-stat-label">Ships sunk</span>
+                      <span className="go-stat-val">
+                        {playerBoard.ships.filter((s) => s.hits >= s.length).length}
+                        <span className="go-stat-sub"> / {FLEET.length}</span>
+                      </span>
+                    </div>
+                    <div className="go-stat-row">
+                      <span className="go-stat-label">Longest streak</span>
+                      <span className="go-stat-val">{longestStreak('cpu', shotLog)}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="go-actions">
+                  <button className="play-ball" onClick={newGame} autoFocus>
+                    PLAY AGAIN
+                  </button>
+                </div>
               </div>
             </div>
           )}

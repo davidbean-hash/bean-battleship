@@ -56,6 +56,9 @@ function computeHardHeatmap(state: AIState): number[][] {
   const requiredHits = new Set(state.currentHits.map(([r, c]) => `${r},${c}`));
 
   for (const len of state.remainingLengths) {
+    // Weight longer ships more heavily: finding the biggest ship first
+    // gives the most information and is the most valuable target.
+    const weight = len;
     for (let r = 0; r < BOARD_SIZE; r++) {
       for (let c = 0; c < BOARD_SIZE; c++) {
         for (const orientation of ['H', 'V'] as const) {
@@ -76,7 +79,7 @@ function computeHardHeatmap(state: AIState): number[][] {
 
           for (const [sr, sc] of cells) {
             if (state.shots[sr][sc] === 'unknown') {
-              heat[sr][sc] += 1;
+              heat[sr][sc] += weight;
             }
           }
         }
@@ -218,13 +221,29 @@ export function recordResult(
   state.shots[r][c] = 'hit';
   state.currentHits.push([r, c]);
   if (sunkShip) {
-    for (const [sr, sc] of shipCells(
+    const sunkCells = shipCells(
       sunkShip.row,
       sunkShip.col,
       sunkShip.length,
       sunkShip.orientation,
-    )) {
+    );
+    for (const [sr, sc] of sunkCells) {
       state.shots[sr][sc] = 'sunk';
+    }
+    // Exploit no-touch rule: all 8-neighbors of a sunk ship cannot hold
+    // any other ship, so mark them as misses to shrink the search space.
+    for (const [sr, sc] of sunkCells) {
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          const nr = sr + dr;
+          const nc = sc + dc;
+          if (!inBounds(nr, nc)) continue;
+          if (state.shots[nr][nc] === 'unknown') {
+            state.shots[nr][nc] = 'miss';
+          }
+        }
+      }
     }
     // remove this ship's length from remaining
     const idx = state.remainingLengths.indexOf(sunkShip.length);

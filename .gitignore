@@ -15,3 +15,8 @@ vite.config.js
 .vscode
 .env
 .env.*
+
+# Playwright
+test-results
+playwright-report
+playwright/.cache
