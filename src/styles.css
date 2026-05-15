@@ -2490,7 +2490,7 @@ kbd {
 .bottom-row {
   display: grid;
   grid-template-areas: 'score announcer cta';
-  grid-template-columns: minmax(280px, 1.6fr) minmax(240px, 1.2fr) minmax(160px, auto);
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.2fr) minmax(0, 0.8fr);
   gap: clamp(6px, 1vw, 14px);
   margin-top: clamp(4px, 1vw, 16px);
   align-items: stretch;
@@ -2515,7 +2515,7 @@ kbd {
 @media (max-width: 1366px), (max-height: 860px) {
   .bottom-row {
     grid-template-areas: 'score announcer cta';
-    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(150px, auto);
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 0.8fr);
     gap: 8px;
   }
 
