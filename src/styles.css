@@ -29,13 +29,14 @@ body {
   padding: 0;
   height: 100%;
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: hidden;
   font-family: 'Oswald', system-ui, sans-serif;
   color: var(--ink);
 }
 
 #root {
   height: 100%;
+  overflow: hidden;
 }
 
 body {
@@ -51,7 +52,7 @@ body {
     url('/hero.jpg');
   background-size: cover;
   background-position: center center;
-  background-attachment: fixed;
+  background-attachment: scroll;
   background-repeat: no-repeat;
   min-height: 100vh;
 }
@@ -84,6 +85,16 @@ button:disabled {
   cursor: default;
 }
 
+button:focus-visible,
+.cell:focus-visible,
+.ship-card-btn:focus-visible,
+.play-ball:focus-visible,
+.play-ball-big:focus-visible,
+.play-ball-sm:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+
 kbd {
   font-family: 'Roboto Mono', monospace;
   background: var(--ink);
@@ -99,6 +110,7 @@ kbd {
 
 .landing {
   position: relative;
+  height: 100vh;
   min-height: 100vh;
   overflow: hidden;
   display: flex;
@@ -334,6 +346,7 @@ kbd {
   position: relative;
   z-index: 10;
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -542,13 +555,13 @@ kbd {
   display: flex;
   flex-direction: column;
   gap: clamp(6px, 1vw, 12px);
-  overflow: auto;
+  overflow: hidden;
 }
 
 @media (max-height: 700px) {
   .app {
-    height: auto;
-    min-height: 100vh;
+    padding: 4px;
+    gap: 4px;
   }
 }
 
@@ -748,6 +761,15 @@ kbd {
   color: #4b2f1c;
   line-height: 1.45;
   font-family: 'Special Elite', monospace;
+}
+
+.hint-rule {
+  border-left: 3px solid var(--sox-red);
+  background: rgba(189, 48, 57, 0.08);
+  color: #5a2a2a;
+  padding: 6px 8px;
+  font-size: 11px;
+  letter-spacing: 0.02em;
 }
 
 .ship-list {
@@ -2297,6 +2319,24 @@ kbd {
   left: auto;
   right: 14vw;
   transform: scaleX(-1) rotate(-18deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .homer-effect,
+  .homer-ball,
+  .homer-trail,
+  .homer-call {
+    animation: none !important;
+  }
 }
 
 .homer-call {

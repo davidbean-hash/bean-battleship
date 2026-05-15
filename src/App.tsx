@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, memo, useEffect, useMemo, useRef, useState } from 'react';
 import {
   BOARD_SIZE,
   BoardState,
@@ -42,6 +42,7 @@ const COL_LABELS = Array.from({ length: BOARD_SIZE }, (_, i) =>
   String.fromCharCode(65 + i),
 );
 const ROW_LABELS = Array.from({ length: BOARD_SIZE }, (_, i) => String(i + 1));
+const AI_TURN_DELAY_MS = 420;
 
 function coord(r: number, c: number): string {
   return `${COL_LABELS[c]}${r + 1}`;
@@ -66,7 +67,7 @@ interface BoardViewProps {
   previewValid?: boolean;
 }
 
-function BoardView({
+const BoardView = memo(function BoardView({
   board,
   revealShips,
   interactive,
@@ -118,7 +119,7 @@ function BoardView({
                 key={`${r}-${c}`}
                 className={classes.join(' ')}
                 style={{ gridColumn: c + 2, gridRow: r + 2 }}
-                disabled={!interactive || (shot !== 'unknown' && shot !== 'blocked')}
+                disabled={!interactive || shot !== 'unknown'}
                 onClick={() => onCellClick?.(r, c)}
                 onMouseEnter={() => onCellEnter?.(r, c)}
                 onFocus={() => onCellEnter?.(r, c)}
@@ -165,7 +166,9 @@ function BoardView({
         })}
     </div>
   );
-}
+});
+
+BoardView.displayName = 'BoardView';
 
 interface PanelProps {
   title: string;
@@ -486,7 +489,7 @@ export default function App() {
         return;
       }
       setTurn('you');
-    }, 650);
+    }, AI_TURN_DELAY_MS);
     return () => {
       if (aiTimer.current) window.clearTimeout(aiTimer.current);
     };
@@ -502,6 +505,7 @@ export default function App() {
   );
 
   const lastShot = shotLog[0];
+  const recentShots = useMemo(() => shotLog.slice(0, 5), [shotLog]);
 
   // -------------------- LANDING --------------------
   if (phase === 'landing') {
@@ -627,10 +631,11 @@ export default function App() {
         <div className="setup-grid">
           <Panel title="Your Fleet" className="roster-panel">
             <p className="hint">
-              Pick a ship, then click your field to place it. Press{' '}
-              <kbd>R</kbd> or the rotate button to flip it. Ships can't touch —
-              leave a gap between each (including diagonally).
+              Pick a ship, then click your field to place it. Press <kbd>R</kbd>{' '}
+              or the rotate button to flip it. Keep at least one empty square
+              between every ship (including diagonals).
             </p>
+            <p className="hint hint-rule">Rule: ships cannot touch, even at corners.</p>
             <ul className="ship-list">
               {FLEET.map((s) => {
                 const placed = placedIds.has(s.id);
@@ -696,7 +701,7 @@ export default function App() {
           </Panel>
 
           <Panel title="Your Field" className="field-panel">
-            <div className="field-status">
+            <div className="field-status" role="status" aria-live="polite">
               {placedIds.size}/{FLEET.length} ships placed
             </div>
             <BoardView
@@ -871,7 +876,7 @@ export default function App() {
                   <div className="log-empty">No shots yet.</div>
                 ) : (
                   <ul className="log-list">
-                    {shotLog.slice(0, 5).map((s, i) => (
+                    {recentShots.map((s, i) => (
                       <li key={i} className={`log-item ${s.result}`}>
                         <span className="log-who">
                           {s.who === 'you' ? 'You' : 'CPU'}
@@ -972,7 +977,9 @@ export default function App() {
                 <div className="announcer-mic" aria-hidden>
                   🎙
                 </div>
-                <div className="announcer-text">"{message}"</div>
+                <div className="announcer-text" role="status" aria-live="polite">
+                  "{message}"
+                </div>
               </div>
             </div>
 
