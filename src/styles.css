@@ -1389,8 +1389,68 @@ kbd {
 }
 
 .setup-grid .panel-body {
-  overflow: auto;
+  overflow: hidden;
   min-height: 0;
+}
+
+/* Compact setup page roster to fit PLAY BALL button without scrolling */
+.setup-grid .roster-panel .panel-body {
+  padding: 6px 8px;
+  gap: 4px;
+}
+
+.setup-grid .roster-panel .hint {
+  font-size: 10px;
+  line-height: 1.3;
+  margin: 0 0 4px 0;
+}
+
+.setup-grid .roster-panel .ship-list {
+  gap: 3px;
+}
+
+.setup-grid .roster-panel .ship-card-btn {
+  padding: 4px 6px;
+  gap: 6px;
+  min-height: 0;
+}
+
+.setup-grid .roster-panel .ship-card-icon {
+  width: 44px;
+  height: 26px;
+  padding: 2px;
+}
+
+.setup-grid .roster-panel .ship-name {
+  font-size: 10px;
+  line-height: 1.1;
+}
+
+.setup-grid .roster-panel .ship-cells .ship-cell {
+  width: 6px;
+  height: 6px;
+}
+
+.setup-grid .roster-panel .placement-actions {
+  margin-top: 3px;
+  gap: 4px;
+}
+
+.setup-grid .roster-panel .placement-actions button {
+  padding: 4px 8px;
+  font-size: 11px;
+  min-height: 28px;
+}
+
+.setup-grid .roster-panel .play-ball-container {
+  margin-top: 6px;
+  padding-top: 6px;
+}
+
+.setup-grid .roster-panel .play-ball-big {
+  padding: 10px 16px;
+  font-size: 14px;
+  min-height: 40px;
 }
 
 .side-stack {
