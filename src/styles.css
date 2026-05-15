@@ -910,6 +910,18 @@ kbd {
   border-color: #4a0a10;
 }
 
+.cell.blocked {
+  background: rgba(42, 28, 17, 0.5);
+  outline-color: rgba(245, 233, 207, 0.15);
+}
+
+.cell.blocked .blocked-x {
+  font-family: 'Black Ops One', sans-serif;
+  font-size: clamp(12px, 1.5vw, 18px);
+  color: rgba(245, 233, 207, 0.5);
+  text-shadow: none;
+}
+
 .cell .x {
   font-family: 'Black Ops One', sans-serif;
   font-size: clamp(14px, 1.8vw, 20px);

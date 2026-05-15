@@ -114,6 +114,31 @@ export interface ShotResult {
   gameOver: boolean;
 }
 
+function markSurroundingBlocked(board: BoardState, ship: PlacedShip): void {
+  // Get all ship cells
+  const shipCellsSet = new Set(
+    shipCells(ship.row, ship.col, ship.length, ship.orientation).map(([r, c]) => `${r},${c}`)
+  );
+
+  // Mark all surrounding cells (8 directions) as blocked
+  for (const [r, c] of shipCells(ship.row, ship.col, ship.length, ship.orientation)) {
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        if (dr === 0 && dc === 0) continue; // Skip the cell itself
+        const nr = r + dr;
+        const nc = c + dc;
+        if (inBounds(nr, nc)) {
+          const key = `${nr},${nc}`;
+          // Only mark if not part of the sunk ship and still unknown
+          if (!shipCellsSet.has(key) && board.shots[nr][nc] === 'unknown') {
+            board.shots[nr][nc] = 'blocked';
+          }
+        }
+      }
+    }
+  }
+}
+
 export function fireAt(board: BoardState, row: number, col: number): ShotResult {
   if (!inBounds(row, col)) {
     return { result: 'repeat', gameOver: false };
@@ -134,6 +159,8 @@ export function fireAt(board: BoardState, row: number, col: number): ShotResult 
     for (const [r, c] of shipCells(ship.row, ship.col, ship.length, ship.orientation)) {
       board.shots[r][c] = 'sunk';
     }
+    // Mark surrounding cells as blocked (no ships can be there)
+    markSurroundingBlocked(board, ship);
     const gameOver = board.ships.every((s) => s.hits >= s.length);
     return { result: 'sunk', shipIndex: shipIdx, sunkShip: ship, gameOver };
   }

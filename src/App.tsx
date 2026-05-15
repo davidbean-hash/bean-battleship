@@ -109,6 +109,7 @@ function BoardView({
             if (shot === 'miss') classes.push('miss');
             if (shot === 'hit') classes.push('hit');
             if (shot === 'sunk') classes.push('sunk');
+            if (shot === 'blocked') classes.push('blocked');
             if (interactive && shot === 'unknown') classes.push('clickable');
             if (inPreview)
               classes.push(previewValid ? 'preview-ok' : 'preview-bad');
@@ -117,7 +118,7 @@ function BoardView({
                 key={`${r}-${c}`}
                 className={classes.join(' ')}
                 style={{ gridColumn: c + 2, gridRow: r + 2 }}
-                disabled={!interactive || shot !== 'unknown'}
+                disabled={!interactive || (shot !== 'unknown' && shot !== 'blocked')}
                 onClick={() => onCellClick?.(r, c)}
                 onMouseEnter={() => onCellEnter?.(r, c)}
                 onFocus={() => onCellEnter?.(r, c)}
@@ -126,6 +127,11 @@ function BoardView({
                 {shot === 'miss' && <span className="baseball" aria-hidden />}
                 {(shot === 'hit' || shot === 'sunk') && (
                   <span className="x" aria-hidden>
+                    ✕
+                  </span>
+                )}
+                {shot === 'blocked' && (
+                  <span className="x blocked-x" aria-hidden>
                     ✕
                   </span>
                 )}

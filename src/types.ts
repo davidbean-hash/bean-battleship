@@ -18,7 +18,7 @@ export interface PlacedShip extends ShipSpec {
   hits: number;
 }
 
-export type CellState = 'unknown' | 'miss' | 'hit' | 'sunk';
+export type CellState = 'unknown' | 'miss' | 'hit' | 'sunk' | 'blocked';
 
 export interface BoardState {
   ships: PlacedShip[];
