@@ -129,8 +129,8 @@ function markSurroundingBlocked(board: BoardState, ship: PlacedShip): void {
         const nc = c + dc;
         if (inBounds(nr, nc)) {
           const key = `${nr},${nc}`;
-          // Only mark if not part of the sunk ship and still unknown
-          if (!shipCellsSet.has(key) && board.shots[nr][nc] === 'unknown') {
+          // Only mark if not part of the sunk ship and still unknown or a miss
+          if (!shipCellsSet.has(key) && (board.shots[nr][nc] === 'unknown' || board.shots[nr][nc] === 'miss')) {
             board.shots[nr][nc] = 'blocked';
           }
         }
