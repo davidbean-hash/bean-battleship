@@ -1187,38 +1187,20 @@ kbd {
   border-color: #4a0a10 !important;
 }
 
-/* Baseball miss marker */
+/* Baseball miss marker — real-leather look via single inline SVG background.
+   Avoids expensive clipped oversized pseudo-elements which caused paint lag
+   when many misses accumulated on the board. */
 .baseball {
-  position: relative;
-  width: 60%;
-  height: 60%;
-  max-width: 18px;
-  max-height: 18px;
-  background: #fff;
-  border-radius: 50%;
-  box-shadow: inset 0 -2px 3px rgba(0, 0, 0, 0.15);
-}
-
-.baseball::before,
-.baseball::after {
-  content: '';
-  position: absolute;
-  top: 18%;
-  bottom: 18%;
-  width: 2px;
-  background: var(--sox-red);
-}
-
-.baseball::before {
-  left: 26%;
-  transform: rotate(-22deg);
-  border-radius: 2px;
-}
-
-.baseball::after {
-  right: 26%;
-  transform: rotate(22deg);
-  border-radius: 2px;
+  display: inline-block;
+  width: 68%;
+  height: 68%;
+  max-width: 22px;
+  max-height: 22px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><defs><radialGradient id='g' cx='35%25' cy='30%25' r='75%25'><stop offset='0%25' stop-color='%23ffffff'/><stop offset='45%25' stop-color='%23faf1d8'/><stop offset='85%25' stop-color='%23e4d3a4'/><stop offset='100%25' stop-color='%23b89b5e'/></radialGradient></defs><circle cx='10' cy='10' r='9.2' fill='url(%23g)' stroke='%238a6f3a' stroke-width='0.35'/><path d='M 4.2 3.6 Q 1.2 10 4.2 16.4' fill='none' stroke='%23c4202b' stroke-width='0.85' stroke-linecap='round' stroke-dasharray='0.9 0.9'/><path d='M 15.8 3.6 Q 18.8 10 15.8 16.4' fill='none' stroke='%23c4202b' stroke-width='0.85' stroke-linecap='round' stroke-dasharray='0.9 0.9'/></svg>");
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: center;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
 }
 
 .baseball.small {

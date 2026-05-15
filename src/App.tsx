@@ -255,15 +255,15 @@ function FenwayBackdrop() {
         <div className="manual-scoreboard">
           <div className="sb-row">
             <span>BOS</span>
-            <span>3</span>
-            <span>1</span>
-            <span>0</span>
+            <span>·</span>
+            <span>·</span>
+            <span>·</span>
           </div>
           <div className="sb-row">
             <span>NYY</span>
-            <span>0</span>
-            <span>0</span>
-            <span>2</span>
+            <span>·</span>
+            <span>·</span>
+            <span>·</span>
           </div>
         </div>
         <div className="monster-wall" />
@@ -1127,9 +1127,9 @@ export default function App() {
               <button
                 className="end-turn"
                 onClick={newGame}
-                aria-label={phase === 'over' ? 'Start a new game' : 'Surrender and start over'}
+                aria-label={phase === 'over' ? 'Start a new game' : 'Restart the game'}
               >
-                {phase === 'over' ? 'NEW GAME' : 'END TURN'}
+                {phase === 'over' ? 'NEW GAME' : 'RESTART'}
               </button>
             </div>
           </div>
