@@ -396,6 +396,7 @@ export default function App() {
     setShotLog([]);
     setHomerEffect(null);
     setWinner(null);
+    setStats({ youShots: 0, youHits: 0, aiShots: 0, aiHits: 0 });
     setMessage('Place your fleet, then play ball.');
   }
 
