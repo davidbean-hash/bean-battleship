@@ -45,6 +45,48 @@ function isUnknown(state: AIState, r: number, c: number): boolean {
   return inBounds(r, c) && state.shots[r][c] === 'unknown';
 }
 
+function canContainShip(state: AIState, r: number, c: number): boolean {
+  if (!inBounds(r, c)) return false;
+  const cell = state.shots[r][c];
+  return cell !== 'miss' && cell !== 'sunk';
+}
+
+function computeHardHeatmap(state: AIState): number[][] {
+  const heat = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(0));
+  const requiredHits = new Set(state.currentHits.map(([r, c]) => `${r},${c}`));
+
+  for (const len of state.remainingLengths) {
+    for (let r = 0; r < BOARD_SIZE; r++) {
+      for (let c = 0; c < BOARD_SIZE; c++) {
+        for (const orientation of ['H', 'V'] as const) {
+          const cells = shipCells(r, c, len, orientation);
+          if (cells.some(([sr, sc]) => !canContainShip(state, sr, sc))) continue;
+
+          if (requiredHits.size > 0) {
+            const cellSet = new Set(cells.map(([sr, sc]) => `${sr},${sc}`));
+            let includesAllHits = true;
+            for (const hit of requiredHits) {
+              if (!cellSet.has(hit)) {
+                includesAllHits = false;
+                break;
+              }
+            }
+            if (!includesAllHits) continue;
+          }
+
+          for (const [sr, sc] of cells) {
+            if (state.shots[sr][sc] === 'unknown') {
+              heat[sr][sc] += 1;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return heat;
+}
+
 function recomputeTargetQueue(state: AIState): void {
   state.targetQueue = [];
   const hits = state.currentHits;
@@ -78,10 +120,57 @@ function recomputeTargetQueue(state: AIState): void {
   // Default target: neighbors of the most recent hit, shuffled.
   const [r, c] = hits[hits.length - 1];
   const cands = neighbors(r, c).filter(([nr, nc]) => isUnknown(state, nr, nc));
-  state.targetQueue = shuffle(cands);
+  if (state.difficulty !== 'hard') {
+    state.targetQueue = shuffle(cands);
+    return;
+  }
+
+  const heat = computeHardHeatmap(state);
+  const scored = cands
+    .map(([nr, nc]) => ({ r: nr, c: nc, score: heat[nr][nc] }))
+    .sort((a, b) => a.score - b.score);
+  state.targetQueue = scored.map(({ r: sr, c: sc }) => [sr, sc]);
+}
+
+function hardHuntShot(state: AIState): [number, number] {
+  const heat = computeHardHeatmap(state);
+  let best: [number, number] | null = null;
+  let bestScore = -1;
+  let bestCenterDist = Number.POSITIVE_INFINITY;
+  const center = (BOARD_SIZE - 1) / 2;
+
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      if (state.shots[r][c] !== 'unknown') continue;
+      const score = heat[r][c];
+      const centerDist = Math.abs(r - center) + Math.abs(c - center);
+      if (
+        score > bestScore ||
+        (score === bestScore && centerDist < bestCenterDist)
+      ) {
+        best = [r, c];
+        bestScore = score;
+        bestCenterDist = centerDist;
+      }
+    }
+  }
+
+  if (best) return best;
+
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      if (state.shots[r][c] === 'unknown') return [r, c];
+    }
+  }
+
+  return [0, 0];
 }
 
 function huntShot(state: AIState): [number, number] {
+  if (state.difficulty === 'hard') {
+    return hardHuntShot(state);
+  }
+
   const minLen =
     state.remainingLengths.length > 0 ? Math.min(...state.remainingLengths) : 2;
   const parity: Array<[number, number]> = [];
@@ -92,9 +181,6 @@ function huntShot(state: AIState): [number, number] {
       any.push([r, c]);
       if ((r + c) % minLen === 0) parity.push([r, c]);
     }
-  }
-  if (state.difficulty === 'hard' && parity.length > 0) {
-    return parity[Math.floor(Math.random() * parity.length)];
   }
   return any[Math.floor(Math.random() * any.length)];
 }

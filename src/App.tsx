@@ -474,7 +474,6 @@ export default function App() {
         ...log,
       ]);
       if (res.result === 'sunk') {
-        triggerHomerEffect('cpu', res.sunkShip!.name);
         setMessage(
           `That ball is HEADED OVER THE GREEN MONSTER! They sank your ${res.sunkShip!.name}.`,
         );
@@ -555,7 +554,7 @@ export default function App() {
               >
                 <span className="diff-label">World Series</span>
                 <span className="diff-sub">
-                  Hard · parity hunt + line lock
+                  Hard · probability hunt + line lock
                 </span>
               </button>
             </div>
@@ -654,24 +653,37 @@ export default function App() {
             </p>
             <p className="hint hint-rule">Rule: ships cannot touch, even at corners.</p>
 
-            <div className="selected-ship-preview">
-              <div className="preview-header">
-                <span className="preview-label">Currently Selected</span>
-                {selectedShip && (
-                  <span className="preview-orientation">{orientation === 'H' ? '→ Horizontal' : '↓ Vertical'}</span>
+            {!allPlaced ? (
+              <div className="selected-ship-preview">
+                <div className="preview-header">
+                  <span className="preview-label">Currently Selected</span>
+                  {selectedShip && (
+                    <span className="preview-orientation">
+                      {orientation === 'H' ? '→ Horizontal' : '↓ Vertical'}
+                    </span>
+                  )}
+                </div>
+                {selectedShip && !placedIds.has(selectedShip.id) ? (
+                  <div
+                    className={[
+                      'preview-ship',
+                      orientation === 'H'
+                        ? 'preview-ship-horizontal'
+                        : 'preview-ship-vertical',
+                    ].join(' ')}
+                  >
+                    <ShipIcon id={selectedShip.id} orientation={orientation} />
+                    <span className="preview-name">{selectedShip.name}</span>
+                  </div>
+                ) : (
+                  <div className="preview-placeholder">
+                    Select a ship from the list below
+                  </div>
                 )}
               </div>
-              {selectedShip && !placedIds.has(selectedShip.id) ? (
-                <div className="preview-ship">
-                  <ShipIcon id={selectedShip.id} orientation={orientation} />
-                  <span className="preview-name">{selectedShip.name}</span>
-                </div>
-              ) : (
-                <div className="preview-placeholder">
-                  {allPlaced ? 'All ships placed!' : 'Select a ship from the list below'}
-                </div>
-              )}
-            </div>
+            ) : (
+              <div className="fleet-ready-note">Fleet ready — press PLAY BALL.</div>
+            )}
 
             <ul className="ship-list">
               {FLEET.map((s) => {
